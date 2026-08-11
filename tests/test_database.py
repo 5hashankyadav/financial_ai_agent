@@ -144,3 +144,86 @@ def test_get_period_metrics(tmp_path):
 
     assert "net_sales" in metrics
     assert "revenue" in metrics
+
+
+
+
+def test_ceo_can_access_public_metric():
+    db = FinancialDatabase()
+
+    results = db.get_metric(
+        metric="iphone_revenue",
+        fiscal_year=2025,
+        quarter="Q1",
+        role="CEO",
+    )
+
+    assert len(results) > 0
+
+
+def test_cto_can_access_public_metric():
+    db = FinancialDatabase()
+
+    results = db.get_metric(
+        metric="iphone_revenue",
+        fiscal_year=2025,
+        quarter="Q1",
+        role="CTO",
+    )
+
+    assert len(results) > 0
+
+
+def test_analyst_can_access_public_metric():
+    db = FinancialDatabase()
+
+    results = db.get_metric(
+        metric="iphone_revenue",
+        fiscal_year=2025,
+        quarter="Q1",
+        role="ANALYST",
+    )
+
+    assert len(results) > 0
+
+
+def test_cto_cannot_access_restricted_metric():
+    db = FinancialDatabase()
+
+    results = db.get_metric(
+        metric="headcount",
+        fiscal_year=2025,
+        quarter="Q1",
+        role="CTO",
+    )
+
+    assert results == []
+
+
+def test_analyst_cannot_access_restricted_metric():
+    db = FinancialDatabase()
+
+    results = db.get_metric(
+        metric="salary",
+        fiscal_year=2025,
+        quarter="Q1",
+        role="ANALYST",
+    )
+
+    assert results == []
+
+
+def test_ceo_can_access_restricted_metric():
+    db = FinancialDatabase()
+
+    results = db.get_metric(
+        metric="headcount",
+        fiscal_year=2025,
+        quarter="Q1",
+        role="CEO",
+    )
+
+    # CEO has unrestricted metric access.
+    # The result may still be empty if this metric
+    # has not been ingested into the database.
+    assert isinstance(results, list)

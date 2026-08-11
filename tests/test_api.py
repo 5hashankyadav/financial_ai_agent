@@ -5,7 +5,11 @@ from app.api import app, get_agent
 
 class MockFinancialAgent:
 
-    def ask(self, question: str):
+    def ask(
+        self,
+        question: str,
+        role: str = "CEO",
+    ):
 
         if "net sales" in question.lower():
 
@@ -50,12 +54,15 @@ class MockFinancialAgent:
 
 class FailingFinancialAgent:
 
-    def ask(self, question: str):
-        raise RuntimeError("Simulated agent failure")
+    def ask(
+        self,
+        question: str,
+        role: str = "CEO",
+    ):
+        raise RuntimeError(
+            "Simulated agent failure"
+        )
 
-# --------------------------------------------------
-# Override the real FinancialAgent
-# --------------------------------------------------
 
 app.dependency_overrides[get_agent] = (
     lambda: MockFinancialAgent()
@@ -63,10 +70,6 @@ app.dependency_overrides[get_agent] = (
 
 client = TestClient(app)
 
-
-# --------------------------------------------------
-# Tests
-# --------------------------------------------------
 
 def test_health():
 
@@ -85,11 +88,12 @@ def test_empty_question():
     response = client.post(
         "/ask",
         json={
-            "question": ""
+            "question": "",
         },
     )
 
     assert response.status_code == 400
+
 
 def test_missing_question():
 
@@ -106,18 +110,22 @@ def test_invalid_question_type():
     response = client.post(
         "/ask",
         json={
-            "question": 123
+            "question": 123,
         },
     )
 
     assert response.status_code == 422
+
 
 def test_structured_question():
 
     response = client.post(
         "/ask",
         json={
-            "question": "What was Apple's net sales in Q1 FY23?"
+            "question": (
+                "What was Apple's net sales "
+                "in Q1 FY23?"
+            ),
         },
     )
 
@@ -134,7 +142,9 @@ def test_hybrid_question():
     response = client.post(
         "/ask",
         json={
-            "question": "Why did Apple's revenue change?"
+            "question": (
+                "Why did Apple's revenue change?"
+            ),
         },
     )
 
@@ -145,12 +155,16 @@ def test_hybrid_question():
     assert data["route"] == "hybrid"
     assert "1,323" in data["answer"]
 
+
 def test_rag_question():
 
     response = client.post(
         "/ask",
         json={
-            "question": "What does Apple's annual report say about its business strategy?"
+            "question": (
+                "What does Apple's annual report "
+                "say about its business strategy?"
+            ),
         },
     )
 
@@ -161,12 +175,16 @@ def test_rag_question():
     assert data["route"] == "rag"
     assert len(data["sources"]) > 0
 
+
 def test_response_structure():
 
     response = client.post(
         "/ask",
         json={
-            "question": "What was Apple's net sales in Q1 FY23?"
+            "question": (
+                "What was Apple's net sales "
+                "in Q1 FY23?"
+            ),
         },
     )
 
@@ -190,11 +208,12 @@ def test_whitespace_question():
     response = client.post(
         "/ask",
         json={
-            "question": "   "
+            "question": "   ",
         },
     )
 
     assert response.status_code == 400
+
 
 def test_agent_internal_error():
 
@@ -205,7 +224,7 @@ def test_agent_internal_error():
     response = client.post(
         "/ask",
         json={
-            "question": "What was Apple's revenue?"
+            "question": "What was Apple's revenue?",
         },
     )
 
@@ -214,7 +233,8 @@ def test_agent_internal_error():
     data = response.json()
 
     assert data["detail"] == (
-        "An internal error occurred while processing the question."
+        "An internal error occurred while "
+        "processing the question."
     )
 
     app.dependency_overrides[get_agent] = (
@@ -222,8 +242,8 @@ def test_agent_internal_error():
     )
 
 
-
 def test_request_id_header():
+
     response = client.get("/health")
 
     assert response.status_code == 200
@@ -232,3 +252,115 @@ def test_request_id_header():
     request_id = response.headers["X-Request-ID"]
 
     assert len(request_id) == 36
+
+
+def test_role_is_passed_to_agent():
+
+    class RoleCheckingAgent:
+
+        def ask(
+            self,
+            question: str,
+            role: str = "CEO",
+        ):
+            return {
+                "answer": f"Role received: {role}",
+                "route": "structured",
+                "sources": [],
+            }
+
+    app.dependency_overrides[get_agent] = (
+        lambda: RoleCheckingAgent()
+    )
+
+    response = client.post(
+        "/ask",
+        json={
+            "question": "What was Apple's revenue?",
+            "role": "CTO",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert "Role received: CTO" in data["answer"]
+
+    app.dependency_overrides[get_agent] = (
+        lambda: MockFinancialAgent()
+    )
+
+
+def test_invalid_role():
+
+    response = client.post(
+        "/ask",
+        json={
+            "question": "What was Apple's revenue?",
+            "role": "INTERN",
+        },
+    )
+
+    assert response.status_code == 400
+
+    data = response.json()
+
+    assert "Invalid role" in data["detail"]
+
+
+
+def test_invalid_role():
+
+    response = client.post(
+        "/ask",
+        json={
+            "question": "What was Apple's iPhone revenue?",
+            "role": "INTERN",
+        },
+    )
+
+    assert response.status_code == 400
+
+    data = response.json()
+
+    assert data["detail"] == (
+        "Invalid role. Allowed roles: "
+        "CEO, CTO, ANALYST."
+    )
+
+
+def test_ceo_role():
+
+    response = client.post(
+        "/ask",
+        json={
+            "question": "What was Apple's net sales in Q1 FY23?",
+            "role": "CEO",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["route"] == "structured"
+    assert "117,154" in data["answer"]
+
+
+def test_analyst_role():
+
+    response = client.post(
+        "/ask",
+        json={
+            "question": "What was Apple's net sales in Q1 FY23?",
+            "role": "ANALYST",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["route"] == "structured"
+    assert "117,154" in data["answer"]

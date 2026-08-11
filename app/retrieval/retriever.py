@@ -100,7 +100,12 @@ class Retriever:
 
         return score
 
-    def search(self, query: str, top_k: int = 5):
+    def search(self, query: str, top_k: int = 5, role: str = "CEO"):
+        from app.security.rbac import normalize_role, Role
+        from app.security.prompt_guard import PromptGuard
+
+        normalized_role = normalize_role(role)
+        restricted_keywords = {"headcount", "compensation", "salary", "executive compensation", "stock awards"}
 
         # --------------------------------------------------
         # 1. Semantic retrieval
@@ -118,7 +123,7 @@ class Retriever:
         )
 
         # Retrieve more candidates for reranking
-        candidate_k = min(20, self.index.ntotal)
+        candidate_k = min(25, self.index.ntotal)
 
         scores, indices = self.index.search(
             query_embedding,
@@ -135,10 +140,18 @@ class Retriever:
                 continue
 
             chunk = self.chunks[index]
+            text = chunk["text"]
 
-            text_tokens = self._tokenize(
-                chunk["text"]
-            )
+            # Data-layer RBAC filtering on text chunks
+            if normalized_role != Role.CEO:
+                text_lower = text.lower()
+                if any(kw in text_lower for kw in restricted_keywords):
+                    continue
+
+            # Sanitize chunk against indirect prompt injection
+            sanitized_text = PromptGuard.sanitize_text(text)
+
+            text_tokens = self._tokenize(sanitized_text)
 
             # --------------------------------------------------
             # 2. Keyword overlap
@@ -155,9 +168,10 @@ class Retriever:
             # 3. Fiscal period matching
             # --------------------------------------------------
 
+            source_file = chunk.get("source_file") or chunk.get("metadata", {}).get("file_name", "")
             period_score = self._period_score(
                 query,
-                chunk["source_file"]
+                source_file
             )
 
             # --------------------------------------------------
@@ -172,9 +186,9 @@ class Retriever:
 
             candidates.append(
                 {
-                    "text": chunk["text"],
-                    "source_file": chunk["source_file"],
-                    "page_number": chunk["page_number"],
+                    "text": sanitized_text,
+                    "source_file": source_file,
+                    "page_number": chunk.get("page_number") or chunk.get("metadata", {}).get("page_number", 1),
                     "score": float(score),
                     "keyword_score": float(overlap),
                     "period_score": float(period_score),

@@ -4,6 +4,8 @@ from app.agent.comparison import FinancialComparison
 from app.database.financial_queries import FinancialDatabase
 from app.rag.pipeline import FinancialRAG
 from app.agent.hybrid import HybridContextBuilder
+from app.security.rbac import normalize_role
+
 
 class FinancialAgent:
 
@@ -15,32 +17,65 @@ class FinancialAgent:
         self.rag = FinancialRAG()
         self.hybrid_builder = HybridContextBuilder()
 
-    def ask(self, question: str):
+    def ask(
+        self,
+        question: str,
+        role: str = "CEO",
+    ):
+        from app.security.prompt_guard import PromptGuard
+
+        if PromptGuard.inspect_query(question):
+            return {
+                "answer": "Security Alert: Malicious or prompt injection attempt detected. Request rejected.",
+                "route": "security_blocked",
+                "sources": [],
+            }
+
+        role = normalize_role(role)
 
         route = self.router.classify(question)
 
         if route == "structured":
-            return self._structured_query(question)
+            return self._structured_query(
+                question,
+                role,
+            )
 
         if route == "rag":
-            return self._rag_query(question)
+            return self._rag_query(
+                question,
+                role,
+            )
 
         if route == "hybrid":
-            return self._hybrid_query(question)
+            return self._hybrid_query(
+                question,
+                role,
+            )
 
         return {
-            "answer": "I could not determine how to answer this question.",
+            "answer": (
+                "I could not determine how to answer "
+                "this question."
+            ),
             "route": route,
             "sources": [],
         }
 
-    def _structured_query(self, question: str):
+    def _structured_query(
+        self,
+        question: str,
+        role,
+    ):
 
         parsed = self.parser.parse(question)
 
         if not parsed["metric"]:
             return {
-                "answer": "I could not determine the financial metric.",
+                "answer": (
+                    "I could not determine the "
+                    "financial metric."
+                ),
                 "route": "structured",
                 "sources": [],
             }
@@ -51,27 +86,31 @@ class FinancialAgent:
         # Single-period query
         # --------------------------------------------------
 
-        if len(periods) == 1:
+        if len(periods) <= 1:
 
-            period = periods[0]
+            fiscal_year = periods[0]["fiscal_year"] if periods else None
+            quarter = periods[0]["quarter"] if periods else None
 
             results = self.database.get_metric(
                 metric=parsed["metric"],
-                fiscal_year=period["fiscal_year"],
-                quarter=period["quarter"],
+                fiscal_year=fiscal_year,
+                quarter=quarter,
+                role=role,
             )
 
             if not results:
                 return {
                     "answer": (
-                        "I could not find the requested financial "
-                        "data in the database."
+                        "I could not find the requested "
+                        "financial data in the database "
+                        "or you do not have permission "
+                        "to access it."
                     ),
                     "route": "structured",
                     "sources": [],
                 }
 
-            result = results[0]
+            result = results[-1] if not periods else results[0]
 
             answer = self._format_single_result(
                 result,
@@ -104,6 +143,7 @@ class FinancialAgent:
                     metric=parsed["metric"],
                     fiscal_year=period["fiscal_year"],
                     quarter=period["quarter"],
+                    role=role,
                 )
 
                 if not results:
@@ -111,7 +151,8 @@ class FinancialAgent:
                         "answer": (
                             f"I could not find data for "
                             f"FY{str(period['fiscal_year'])[-2:]} "
-                            f"{period['quarter']}."
+                            f"{period['quarter']} or you do "
+                            f"not have permission to access it."
                         ),
                         "route": "structured",
                         "sources": [],
@@ -119,7 +160,9 @@ class FinancialAgent:
 
                 records.append(results[0])
 
-            comparison = self.comparison.compare(records)
+            comparison = self.comparison.compare(
+                records
+            )
 
             answer = self._format_comparison(
                 comparison,
@@ -145,16 +188,23 @@ class FinancialAgent:
 
         return {
             "answer": (
-                "I currently support comparisons between "
-                "two financial periods."
+                "I currently support comparisons "
+                "between two financial periods."
             ),
             "route": "structured",
             "sources": [],
         }
 
-    def _rag_query(self, question: str):
-
-        result = self.rag.ask(question)
+    def _rag_query(
+        self,
+        question: str,
+        role,
+    ):
+        role_val = role.value if hasattr(role, 'value') else role
+        try:
+            result = self.rag.ask(question, role=role_val)
+        except TypeError:
+            result = self.rag.ask(question)
 
         return {
             "answer": result["answer"],
@@ -162,34 +212,47 @@ class FinancialAgent:
             "sources": result["sources"],
         }
 
-    def _hybrid_query(self, question: str):
+    def _hybrid_query(
+        self,
+        question: str,
+        role,
+    ):
+        role_val = role.value if hasattr(role, 'value') else role
+        try:
+            rag_results = self.rag.retrieve(
+                question,
+                top_k=5,
+                role=role_val,
+            )
+        except TypeError:
+            rag_results = self.rag.retrieve(
+                question,
+                top_k=5,
+            )
 
-        # Retrieve PDF context without generating an answer
-        rag_results = self.rag.retrieve(
-            question,
-            top_k=5
-        )
-
-        # Build combined SQLite + PDF context
+        # Build combined SQLite + PDF context.
         context = self.hybrid_builder.build(
             question,
-            rag_results
+            rag_results,
         )
 
         if not context:
             return {
-                "answer": "I could not find relevant financial information.",
+                "answer": (
+                    "I could not find relevant "
+                    "financial information."
+                ),
                 "route": "hybrid",
                 "sources": [],
             }
 
-        # Generate final grounded answer
+        # Generate final grounded answer.
         answer = self.rag.generate_answer(
             question,
-            context
+            context,
         )
 
-        # Collect sources
+        # Collect sources.
         sources = []
 
         for result in rag_results:
@@ -209,31 +272,51 @@ class FinancialAgent:
         }
 
     @staticmethod
-    def _format_single_result(result, metric):
+    def _format_single_result(
+        result,
+        metric,
+    ):
 
-        metric_name = FinancialAgent._metric_name(metric)
+        metric_name = FinancialAgent._metric_name(
+            metric
+        )
 
         value = result["value"]
 
         if result["unit"] == "USD_MILLIONS":
-            formatted_value = f"${value:,.0f} million"
+            formatted_value = (
+                f"${value:,.0f} million"
+            )
+        elif result["unit"] == "EMPLOYEES":
+            formatted_value = (
+                f"{value:,.0f} employees"
+            )
         else:
-            formatted_value = f"{value:,.2f} {result['unit']}"
+            formatted_value = (
+                f"{value:,.2f} {result['unit']}"
+            )
 
         fiscal_year = result["fiscal_year"]
         quarter = result["quarter"].split()[-1]
 
-        verb = "was" if metric == "total_revenue" else "was"
+        verb = "was"
 
         return (
-            f"Apple's {quarter} FY{str(fiscal_year)[-2:]} "
-            f"{metric_name} {verb} {formatted_value}."
+            f"Apple's {quarter} FY"
+            f"{str(fiscal_year)[-2:]} "
+            f"{metric_name} {verb} "
+            f"{formatted_value}."
         )
 
     @staticmethod
-    def _format_comparison(comparison, metric):
+    def _format_comparison(
+        comparison,
+        metric,
+    ):
 
-        metric_name = FinancialAgent._metric_name(metric)
+        metric_name = FinancialAgent._metric_name(
+            metric
+        )
 
         first = comparison["first"]
         second = comparison["second"]
@@ -241,8 +324,13 @@ class FinancialAgent:
         first_value = first["value"]
         second_value = second["value"]
 
-        absolute_change = comparison["absolute_change"]
-        percentage_change = comparison["percentage_change"]
+        absolute_change = comparison[
+            "absolute_change"
+        ]
+
+        percentage_change = comparison[
+            "percentage_change"
+        ]
 
         first_period = (
             f"{first['quarter'].split()[-1]} "
@@ -254,15 +342,22 @@ class FinancialAgent:
             f"FY{str(second['fiscal_year'])[-2:]}"
         )
 
-        direction = "increased" if absolute_change >= 0 else "decreased"
+        direction = (
+            "increased"
+            if absolute_change >= 0
+            else "decreased"
+        )
 
         return (
             f"Apple's {metric_name} was "
-            f"${first_value:,.0f} million in {first_period} "
-            f"and ${second_value:,.0f} million in {second_period}. "
+            f"${first_value:,.0f} million in "
+            f"{first_period} and "
+            f"${second_value:,.0f} million in "
+            f"{second_period}. "
             f"It {direction} by "
             f"${abs(absolute_change):,.0f} million "
-            f"({abs(percentage_change):.2f}%) over the period."
+            f"({abs(percentage_change):.2f}%) "
+            f"over the period."
         )
 
     @staticmethod
@@ -276,6 +371,8 @@ class FinancialAgent:
             "services_revenue": "Services revenue",
             "wearables_home_accessories_revenue":
                 "Wearables, Home and Accessories revenue",
+            "headcount": "total headcount",
+            "compensation": "share-based compensation",
         }
 
         return names.get(metric, metric)

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Analysis Platform</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="dark-theme">
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-status">
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    <div class="status-text">
+                        <span class="status-title">System Connected</span>
+                        <span class="status-sub">FastAPI Engine</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-group">
+                <p class="nav-title">CAPABILITIES</p>
+
+                <div class="nav-item">
+                    <span class="nav-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                            <path d="M21 19c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                        </svg>
+                    </span>
+                    <div class="nav-label">
+                        <span>Structured Queries</span>
+                        <small>Financial Database</small>
+                    </div>
+                </div>
+
+                <div class="nav-item">
+                    <span class="nav-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                    </span>
+                    <div class="nav-label">
+                        <span>Document Search</span>
+                        <small>PDF Vector Index</small>
+                    </div>
+                </div>
+
+                <div class="nav-item">
+                    <span class="nav-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                            <polyline points="2 17 12 22 22 17"></polyline>
+                            <polyline points="2 12 12 17 22 12"></polyline>
+                        </svg>
+                    </span>
+                    <div class="nav-label">
+                        <span>Hybrid Engine</span>
+                        <small>Multi-source Reranking</small>
+                    </div>
+                </div>
+
+                <div class="nav-item">
+                    <span class="nav-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                    </span>
+                    <div class="nav-label">
+                        <span>Role Security</span>
+                        <small>Data-Layer Enforced</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="history-group">
+                <div class="history-header">
+                    <span class="nav-title">RECENT SEARCHES</span>
+                    <button id="clearHistoryBtn" class="text-btn">Clear</button>
+                </div>
+                <div id="historyList" class="history-list">
+                    <div class="history-empty">No recent searches</div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="tech-stack-pills">
+                    <span>SQLite</span>
+                    <span>FAISS</span>
+                    <span>REST API</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <h2>Financial Query Workspace</h2>
+                </div>
+
+                <div class="topbar-right">
+                    <div class="role-selector-card">
+                        <label for="role" class="role-label">ACCESS LEVEL</label>
+                        <div class="select-wrapper">
+                            <select id="role">
+                                <option value="CEO">CEO (All Access)</option>
+                                <option value="CTO">CTO (No Comp/Headcount)</option>
+                                <option value="ANALYST" selected>ANALYST (Public Metrics)</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Query Input Section -->
+            <section class="workspace-card query-card">
+                <div class="card-header">
+                    <div class="title-group">
+                        <h3>Query Financial Statements</h3>
+                        <p>Analyze revenue metrics, quarterly reports, 10-K filings, and period-over-period financial performance.</p>
+                    </div>
+                    <div class="keyboard-hint">
+                        <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to submit
+                    </div>
+                </div>
+
+                <div class="input-container">
+                    <textarea 
+                        id="question" 
+                        placeholder="e.g. What was Apple's iPhone revenue in Q1 FY25? or Why did revenue change from Q2 FY25 to Q3 FY25?" 
+                        rows="3"
+                    ></textarea>
+                </div>
+
+                <div class="query-actions">
+                    <div class="quick-questions">
+                        <span class="quick-title">Sample Queries:</span>
+                        <button type="button" class="prompt-chip" id="iphoneButton">
+                            iPhone Revenue Q1 FY25
+                        </button>
+                        <button type="button" class="prompt-chip" id="revenueButton">
+                            Revenue Change Q2→Q3
+                        </button>
+                        <button type="button" class="prompt-chip" id="strategyButton">
+                            Business Strategy (10-K)
+                        </button>
+                        <button type="button" class="prompt-chip restricted-chip" id="restrictTestButton">
+                            Headcount & Compensation
+                        </button>
+                    </div>
+
+                    <button id="askButton" class="btn-primary" type="button">
+                        <span id="buttonText">Run Analysis</span>
+                        <span class="btn-icon">→</span>
+                        <span id="spinner" class="spinner hidden"></span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Error Banner -->
+            <div id="errorBox" class="error-banner hidden"></div>
+
+            <!-- Agent Response Section -->
+            <section id="answerSection" class="workspace-card answer-card hidden">
+                <div class="answer-header">
+                    <div class="header-left">
+                        <div class="ai-avatar">FA</div>
+                        <div>
+                            <span class="eyebrow-text">ANALYSIS RESULT</span>
+                            <h3>Summary & Findings</h3>
+                        </div>
+                    </div>
+
+                    <div class="header-right">
+                        <span id="routeBadge" class="route-badge">RAG</span>
+                        <button id="copyAnswerBtn" class="icon-btn" title="Copy answer to clipboard">
+                            Copy Text
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Answer Content Box -->
+                <div class="answer-body">
+                    <div id="answer" class="formatted-answer"></div>
+                </div>
+
+                <!-- Interactive Feedback Widget -->
+                <div id="feedbackContainer" class="feedback-widget">
+                    <div class="feedback-left">
+                        <span class="feedback-label">Feedback on result accuracy:</span>
+                        <div class="feedback-buttons">
+                            <button type="button" id="thumbsUpBtn" class="feedback-btn positive">
+                                Accurate
+                            </button>
+                            <button type="button" id="thumbsDownBtn" class="feedback-btn negative">
+                                Provide Correction
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="correctionBox" class="correction-drawer hidden">
+                        <input type="text" id="correctionInput" placeholder="Enter correction or preferred answer notes..." />
+                        <button type="button" id="submitFeedbackBtn" class="btn-secondary">Submit Correction</button>
+                    </div>
+                    
+                    <div id="feedbackMsg" class="feedback-alert hidden"></div>
+                </div>
+
+                <!-- Sources Attribution -->
+                <div class="sources-section">
+                    <div class="sources-header">
+                        <h4>Reference Documents & Evidence</h4>
+                        <span id="sourceCount" class="count-pill">0 sources</span>
+                    </div>
+                    <div id="sources" class="sources-grid"></div>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <footer class="app-footer">
+                <span>Financial Analysis System</span>
+                <span>Enterprise Internal Portal</span>
+            </footer>
+        </main>
+    </div>
+
+    <script src="app.js?v=2.0"></script>
+</body>
+
+</html>

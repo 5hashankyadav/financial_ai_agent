@@ -24,6 +24,16 @@ class FinancialQueryParser:
 
         "wearables revenue": "wearables_home_accessories_revenue",
         "wearables": "wearables_home_accessories_revenue",
+
+        "headcount": "headcount",
+        "employees": "headcount",
+        "employee count": "headcount",
+        "total headcount": "headcount",
+
+        "compensation": "compensation",
+        "employee compensation": "compensation",
+        "salary": "compensation",
+        "stock compensation": "compensation",
     }
 
     def parse(self, question: str) -> dict:

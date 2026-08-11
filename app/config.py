@@ -12,14 +12,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 class Settings:
 
-    GEMINI_API_KEY: str = os.getenv(
-        "GEMINI_API_KEY",
+    GROQ_API_KEY: str = os.getenv(
+        "GROQ_API_KEY",
         "",
     )
 
-    GEMINI_MODEL: str = os.getenv(
-        "GEMINI_MODEL",
-        "gemini-3.6-flash",
+    GROQ_MODEL: str = os.getenv(
+        "GROQ_MODEL",
+        "llama-3.3-70b-versatile",
     )
 
     DATABASE_PATH: Path = BASE_DIR / os.getenv(

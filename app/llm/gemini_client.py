@@ -1,4 +1,4 @@
-from google import genai
+from groq import Groq
 
 from app.config import settings
 
@@ -7,16 +7,20 @@ class GeminiClient:
 
     def __init__(self):
 
-        if not settings.GEMINI_API_KEY:
+        if not settings.GROQ_API_KEY:
             raise ValueError(
-                "GEMINI_API_KEY is not set in the .env file."
+                "GROQ_API_KEY is not set in the .env file."
             )
 
-        self.client = genai.Client(
-            api_key=settings.GEMINI_API_KEY
+        self.client = Groq(
+            api_key=settings.GROQ_API_KEY
         )
 
-        self.model = settings.GEMINI_MODEL
+        model = settings.GROQ_MODEL
+        if model == "llama3-70b-8192":
+            model = "llama-3.3-70b-versatile"
+
+        self.model = model
 
     def generate_answer(
         self,
@@ -51,9 +55,14 @@ User Question:
 Answer:
 """
 
-        response = self.client.models.generate_content(
+        response = self.client.chat.completions.create(
             model=self.model,
-            contents=prompt
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
         )
 
-        return response.text
+        return response.choices[0].message.content

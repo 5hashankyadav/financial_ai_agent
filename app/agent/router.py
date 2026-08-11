@@ -42,6 +42,11 @@ class QueryRouter:
             "ipad revenue",
             "services revenue",
             "wearables revenue",
+            "headcount",
+            "employees",
+            "employee count",
+            "compensation",
+            "salary",
         ]
 
         # --------------------------------------------------

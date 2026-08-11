@@ -1,6 +1,8 @@
 import sqlite3
 from pathlib import Path
+
 from app.config import settings
+from app.security.rbac import can_access_metric
 
 
 DB_PATH = settings.DATABASE_PATH
@@ -21,7 +23,24 @@ class FinancialDatabase:
         quarter=None,
         category=None,
         company="Apple",
+        role="CEO",
     ):
+        """
+        Retrieve financial metric data while enforcing
+        role-based access control.
+        """
+
+        # --------------------------------------------------
+        # RBAC
+        # --------------------------------------------------
+
+        if not can_access_metric(role, metric):
+            return []
+
+        # --------------------------------------------------
+        # Base query
+        # --------------------------------------------------
+
         query = """
             SELECT
                 company,
@@ -44,8 +63,12 @@ class FinancialDatabase:
             metric,
         ]
 
+        # --------------------------------------------------
         # Fiscal year
+        # --------------------------------------------------
+
         if fiscal_year is not None:
+
             db_year = int(fiscal_year)
 
             query += """
@@ -54,8 +77,12 @@ class FinancialDatabase:
 
             params.append(db_year)
 
+        # --------------------------------------------------
         # Quarter
+        # --------------------------------------------------
+
         if quarter is not None:
+
             if fiscal_year is not None:
                 db_quarter = f"{db_year} {quarter}"
             else:
@@ -67,20 +94,28 @@ class FinancialDatabase:
 
             params.append(db_quarter)
 
+        # --------------------------------------------------
         # Category
+        # --------------------------------------------------
+
         if category is not None:
+
             query += """
                 AND category = ?
             """
 
             params.append(category)
 
-        # Keep results ordered chronologically
+        # --------------------------------------------------
+        # Chronological ordering
+        # --------------------------------------------------
+
         query += """
             ORDER BY fiscal_year, quarter
         """
 
         with self._connect() as conn:
+
             rows = conn.execute(
                 query,
                 tuple(params)
@@ -109,9 +144,11 @@ class FinancialDatabase:
         fiscal_year,
         quarter,
         company="Apple",
+        role="CEO",
     ):
         """
-        Get all financial metrics for a specific fiscal period.
+        Get all financial metrics for a specific fiscal
+        period while enforcing role-based access control.
         """
 
         db_year = int(fiscal_year)
@@ -134,20 +171,19 @@ class FinancialDatabase:
             WHERE company = ?
               AND fiscal_year = ?
               AND quarter = ?
-            ORDER BY metric
         """
 
-        params = (
+        params = [
             company,
             db_year,
             db_quarter,
-        )
+        ]
 
         with self._connect() as conn:
 
             rows = conn.execute(
                 query,
-                params
+                tuple(params)
             ).fetchall()
 
         columns = [
@@ -163,7 +199,20 @@ class FinancialDatabase:
             "source_row",
         ]
 
-        return [
+        results = [
             dict(zip(columns, row))
             for row in rows
+        ]
+
+        # --------------------------------------------------
+        # RBAC filtering
+        # --------------------------------------------------
+
+        return [
+            result
+            for result in results
+            if can_access_metric(
+                role,
+                result["metric"],
+            )
         ]

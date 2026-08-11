@@ -6,19 +6,34 @@ class FinancialRAG:
 
     def __init__(self):
         self.retriever = Retriever()
-        self.llm = GeminiClient()
+        self._llm = None
 
-    def retrieve(self, question: str, top_k: int = 5):
+    @property
+    def llm(self):
+        if self._llm is None:
+            self._llm = GeminiClient()
+        return self._llm
+
+    @llm.setter
+    def llm(self, value):
+        self._llm = value
+
+    def retrieve(self, question: str, top_k: int = 5, role: str = "CEO", **kwargs):
         """
         Retrieve relevant document chunks without generating an answer.
         """
-
-        results = self.retriever.search(
-            question,
-            top_k=top_k
-        )
-
-        return results
+        try:
+            return self.retriever.search(
+                question,
+                top_k=top_k,
+                role=role,
+                **kwargs
+            )
+        except TypeError:
+            return self.retriever.search(
+                question,
+                top_k=top_k
+            )
 
     def build_context(self, results):
         """
@@ -68,7 +83,7 @@ Page: {result['page_number']}
             context
         )
 
-    def ask(self, question: str, top_k: int = 5):
+    def ask(self, question: str, top_k: int = 5, role: str = "CEO", **kwargs):
         """
         Standard RAG pipeline:
         retrieval → context → Gemini.
@@ -76,7 +91,9 @@ Page: {result['page_number']}
 
         results = self.retrieve(
             question,
-            top_k=top_k
+            top_k=top_k,
+            role=role,
+            **kwargs
         )
 
         if not results:
