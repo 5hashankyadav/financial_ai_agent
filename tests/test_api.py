@@ -233,3 +233,4 @@ def test_request_id_header():
     request_id = response.headers["X-Request-ID"]
 
     assert len(request_id) == 36
+
