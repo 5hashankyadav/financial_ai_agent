@@ -5,10 +5,10 @@ from app.config import settings
 
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 
 
-MODEL_NAME = "all-MiniLM-L6-v2"
+MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 INDEX_PATH = settings.FAISS_INDEX_PATH
 CHUNKS_PATH = settings.CHUNKS_PATH
@@ -18,7 +18,7 @@ class Retriever:
 
     def __init__(self):
         print("Loading embedding model...")
-        self.model = SentenceTransformer(MODEL_NAME)
+        self.model = TextEmbedding(MODEL_NAME)
 
         print("Loading FAISS index...")
         self.index = faiss.read_index(str(INDEX_PATH))
@@ -111,14 +111,8 @@ class Retriever:
         # 1. Semantic retrieval
         # --------------------------------------------------
 
-        query_embedding = self.model.encode(
-            [query],
-            convert_to_numpy=True,
-            normalize_embeddings=True
-        )
-
-        query_embedding = np.asarray(
-            query_embedding,
+        query_embedding = np.array(
+            list(self.model.embed([query])),
             dtype="float32"
         )
 

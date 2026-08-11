@@ -2,14 +2,14 @@ import pickle
 
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 
 from app.config import settings
 from app.ingestion.pdf_parser import extract_text_from_directory
 from app.ingestion.chunker import chunk_documents
 
 
-MODEL_NAME = "all-MiniLM-L6-v2"
+MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 PDF_DIRECTORY = "data/raw/quarterly"
 
@@ -53,9 +53,7 @@ def build_vector_store():
     # 3. Load embedding model
     print("\nLoading embedding model...")
 
-    model = SentenceTransformer(
-        MODEL_NAME
-    )
+    model = TextEmbedding(MODEL_NAME)
 
     # 4. Extract text from chunks
     texts = [
@@ -69,11 +67,9 @@ def build_vector_store():
         f"{len(texts)} chunks..."
     )
 
-    embeddings = model.encode(
-        texts,
-        convert_to_numpy=True,
-        show_progress_bar=True,
-        normalize_embeddings=True,
+    embeddings = np.array(
+        list(model.embed(texts)),
+        dtype="float32",
     )
 
     embeddings = np.asarray(

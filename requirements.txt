@@ -10,7 +10,5 @@ python-dotenv
 fastapi
 uvicorn[standard]
 httpx
---extra-index-url https://download.pytorch.org/whl/cpu
-torch
-sentence-transformers
+fastembed
 scikit-learn
