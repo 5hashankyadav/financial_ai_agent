@@ -34,7 +34,7 @@ class Settings:
 
     CHUNKS_PATH: Path = BASE_DIR / os.getenv(
         "CHUNKS_PATH",
-        "data/processed/chunks.json",
+        "data/processed/chunks.pkl",
     )
 
 

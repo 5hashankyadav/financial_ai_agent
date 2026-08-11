@@ -1,6 +1,7 @@
-from pathlib import Path
 import pickle
 import re
+
+from app.config import settings
 
 import faiss
 import numpy as np
@@ -9,8 +10,8 @@ from sentence_transformers import SentenceTransformer
 
 MODEL_NAME = "all-MiniLM-L6-v2"
 
-INDEX_PATH = Path("data/processed/faiss.index")
-CHUNKS_PATH = Path("data/processed/chunks.pkl")
+INDEX_PATH = settings.FAISS_INDEX_PATH
+CHUNKS_PATH = settings.CHUNKS_PATH
 
 
 class Retriever:
