@@ -1,8 +1,8 @@
 import sqlite3
-from pathlib import Path
+from app.config import settings
 
 
-DATABASE_PATH = Path("data/processed/financial.db")
+DATABASE_PATH = settings.DATABASE_PATH
 
 
 def get_connection():

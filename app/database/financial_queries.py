@@ -1,8 +1,9 @@
 import sqlite3
 from pathlib import Path
+from app.config import settings
 
 
-DB_PATH = Path("data/processed/financial.db")
+DB_PATH = settings.DATABASE_PATH
 
 
 class FinancialDatabase:
