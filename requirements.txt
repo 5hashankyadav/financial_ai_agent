@@ -4,12 +4,13 @@ openpyxl
 pymupdf
 numpy
 faiss-cpu
-groq
+groq==1.6.0
 google-genai
 python-dotenv
 fastapi
-uvicorn
+uvicorn[standard]
 httpx
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch
 sentence-transformers
+scikit-learn
