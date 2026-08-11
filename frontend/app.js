@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = ""; // Relative URL: works locally and in production (Render, etc.)
 
 // DOM Elements
 const questionInput = document.getElementById("question");
