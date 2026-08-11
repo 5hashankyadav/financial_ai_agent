@@ -4,6 +4,7 @@ openpyxl
 pymupdf
 numpy
 faiss-cpu
+groq
 google-genai
 python-dotenv
 fastapi
