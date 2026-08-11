@@ -3,9 +3,12 @@ xlrd
 openpyxl
 pymupdf
 numpy
-sentence-transformers
 faiss-cpu
 google-genai
 python-dotenv
-Fastapi
+fastapi
 uvicorn
+httpx
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+sentence-transformers
