@@ -1,5 +1,6 @@
 import logging
 import uuid
+import time
 from functools import lru_cache
 
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -51,6 +52,8 @@ async def add_request_id(request: Request, call_next):
 
     request.state.request_id = request_id
 
+    start_time = time.perf_counter()
+
     logger.info(
         "Request started | request_id=%s | method=%s | path=%s",
         request_id,
@@ -60,16 +63,18 @@ async def add_request_id(request: Request, call_next):
 
     response = await call_next(request)
 
+    duration_ms = (time.perf_counter() - start_time) * 1000
+
     response.headers["X-Request-ID"] = request_id
 
     logger.info(
-        "Request completed | request_id=%s | status=%s",
+        "Request completed | request_id=%s | status=%s | duration_ms=%.2f",
         request_id,
         response.status_code,
+        duration_ms,
     )
 
     return response
-
 
 # --------------------------------------------------
 # Agent processing error handler
