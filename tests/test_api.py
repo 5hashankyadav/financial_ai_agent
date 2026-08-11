@@ -224,7 +224,6 @@ def test_agent_internal_error():
 
 
 def test_request_id_header():
-
     response = client.get("/health")
 
     assert response.status_code == 200
@@ -233,4 +232,3 @@ def test_request_id_header():
     request_id = response.headers["X-Request-ID"]
 
     assert len(request_id) == 36
-
